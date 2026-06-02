@@ -11,6 +11,8 @@ import {
   suggestCategory,
 } from "@/lib/ai/patterns";
 import { generateInsights, computeHealthScore } from "@/lib/ai/insights";
+import { getDefaultAuthToken } from "@/lib/sync/auth";
+import type { FinanceSyncSnapshot } from "@/lib/sync/types";
 import type {
   Account,
   Achievement,
@@ -68,6 +70,8 @@ interface FinanceState {
     affectedGoals: SavingsGoal[];
     newBalance: number;
   } | null;
+  syncRevision: number;
+  deviceId: string;
 
   setActiveView: (view: ViewId) => void;
   setSearchQuery: (q: string) => void;
@@ -110,6 +114,10 @@ interface FinanceState {
   getFilteredExpenses: () => Expense[];
   unlockAchievement: (id: string) => void;
   loadDemoData: () => void;
+  getSyncSnapshot: () => FinanceSyncSnapshot;
+  applySyncSnapshot: (snap: FinanceSyncSnapshot) => void;
+  updateSyncSettings: (partial: Partial<AppSettings>) => void;
+  ensureSyncSetup: () => Promise<void>;
 }
 
 function syncBudgetSpent(expenses: Expense[], budget: BudgetPlan | null): BudgetPlan | null {
@@ -172,7 +180,18 @@ export const useFinanceStore = create<FinanceState>()(
         theme: "dark",
         currency: "PHP",
         notifications: true,
+        syncEnabled: true,
+        syncRole: "join",
+        syncHostIp: "",
+        syncAuthToken: "",
+        syncAutoConnect: true,
+        lastKnownHostIp: "",
+        startAtLogin: true,
+        startAtBoot: true,
+        autoUpdate: true,
       },
+      syncRevision: 0,
+      deviceId: "",
       chatMessages: [
         {
           id: "welcome",
@@ -218,7 +237,69 @@ export const useFinanceStore = create<FinanceState>()(
           },
         })),
       setPin: (pin) =>
-        set((s) => ({ settings: { ...s.settings, pin } })),
+        set((s) => ({
+          settings: { ...s.settings, pin },
+          syncRevision: s.syncRevision + 1,
+        })),
+
+      ensureSyncSetup: async () => {
+        const s = get();
+        const token =
+          s.settings.syncAuthToken || (await getDefaultAuthToken());
+        const deviceId =
+          s.deviceId ||
+          `device-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const isHost =
+          typeof window !== "undefined" && window.electronAPI?.isElectron;
+        set({
+          deviceId,
+          settings: {
+            ...s.settings,
+            syncAuthToken: s.settings.syncAuthToken || token,
+            syncRole: isHost ? "host" : "join",
+            syncEnabled: s.settings.syncEnabled ?? true,
+            syncAutoConnect: s.settings.syncAutoConnect ?? true,
+            startAtLogin: s.settings.startAtLogin ?? true,
+            startAtBoot: s.settings.startAtBoot ?? true,
+            autoUpdate: s.settings.autoUpdate ?? true,
+          },
+        });
+      },
+
+      updateSyncSettings: (partial) =>
+        set((s) => ({
+          settings: { ...s.settings, ...partial },
+          syncRevision: s.syncRevision + 1,
+        })),
+
+      getSyncSnapshot: () => {
+        const s = get();
+        return {
+          revision: s.syncRevision,
+          updatedAt: new Date().toISOString(),
+          deviceId: s.deviceId,
+          accounts: s.accounts,
+          expenses: s.expenses,
+          goals: s.goals,
+          budget: s.budget,
+          chatMessages: s.chatMessages,
+          achievements: s.achievements,
+        };
+      },
+
+      applySyncSnapshot: (snap) => {
+        if (snap.revision <= get().syncRevision) return;
+        set({
+          accounts: snap.accounts,
+          expenses: snap.expenses,
+          goals: snap.goals,
+          budget: snap.budget,
+          chatMessages: snap.chatMessages,
+          achievements: snap.achievements,
+          syncRevision: snap.revision,
+          deviceId: snap.deviceId || get().deviceId,
+        });
+      },
 
       addAccount: (account) =>
         set((s) => ({
@@ -230,16 +311,19 @@ export const useFinanceStore = create<FinanceState>()(
               createdAt: new Date().toISOString(),
             },
           ],
+          syncRevision: s.syncRevision + 1,
         })),
 
       updateAccount: (id, data) =>
         set((s) => ({
           accounts: s.accounts.map((a) => (a.id === id ? { ...a, ...data } : a)),
+          syncRevision: s.syncRevision + 1,
         })),
 
       removeAccount: (id) =>
         set((s) => ({
           accounts: s.accounts.filter((a) => a.id !== id),
+          syncRevision: s.syncRevision + 1,
         })),
 
       addExpense: (expense, force = false) => {
@@ -278,6 +362,7 @@ export const useFinanceStore = create<FinanceState>()(
           accounts,
           budget,
           protectedSpendModal: null,
+          syncRevision: state.syncRevision + 1,
         });
 
         get().unlockAchievement("first-expense");
@@ -305,6 +390,7 @@ export const useFinanceStore = create<FinanceState>()(
             expenses,
             accounts,
             budget: syncBudgetSpent(expenses, s.budget),
+            syncRevision: s.syncRevision + 1,
           };
         }),
 
@@ -322,12 +408,14 @@ export const useFinanceStore = create<FinanceState>()(
                 createdAt: new Date().toISOString(),
               },
             ],
+            syncRevision: s.syncRevision + 1,
           };
         }),
 
       updateGoal: (id, data) =>
         set((s) => ({
           goals: s.goals.map((g) => (g.id === id ? { ...g, ...data } : g)),
+          syncRevision: s.syncRevision + 1,
         })),
 
       allocateToGoal: (id, amount) =>
@@ -337,10 +425,14 @@ export const useFinanceStore = create<FinanceState>()(
               ? { ...g, current: Math.min(g.target, g.current + amount) }
               : g
           ),
+          syncRevision: s.syncRevision + 1,
         })),
 
       removeGoal: (id) =>
-        set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
+        set((s) => ({
+          goals: s.goals.filter((g) => g.id !== id),
+          syncRevision: s.syncRevision + 1,
+        })),
 
       setBudgetIncome: (income) =>
         set((s) => {
@@ -353,6 +445,7 @@ export const useFinanceStore = create<FinanceState>()(
               categories: buildBudgetCategories(income, mode),
               updatedAt: new Date().toISOString(),
             },
+            syncRevision: s.syncRevision + 1,
           };
         }),
 
@@ -366,6 +459,7 @@ export const useFinanceStore = create<FinanceState>()(
               categories: buildBudgetCategories(income, mode),
               updatedAt: new Date().toISOString(),
             },
+            syncRevision: s.syncRevision + 1,
           };
         }),
 
@@ -379,6 +473,7 @@ export const useFinanceStore = create<FinanceState>()(
                 c.id === id ? { ...c, ...data } : c
               ),
             },
+            syncRevision: s.syncRevision + 1,
           };
         }),
 
@@ -393,6 +488,7 @@ export const useFinanceStore = create<FinanceState>()(
               timestamp: new Date().toISOString(),
             },
           ],
+          syncRevision: s.syncRevision + 1,
         })),
 
       getTotalBalance: () => get().accounts.reduce((s, a) => s + a.balance, 0),
@@ -535,11 +631,34 @@ export const useFinanceStore = create<FinanceState>()(
             }),
             updatedAt: now.toISOString(),
           },
+          syncRevision: get().syncRevision + 1,
         });
       },
     }),
     {
       name: "prism-finance-storage",
+      merge: (persisted, current) => {
+        const p = persisted as Partial<FinanceState> | undefined;
+        return {
+          ...current,
+          ...p,
+          settings: {
+            ...current.settings,
+            ...p?.settings,
+            syncEnabled: p?.settings?.syncEnabled ?? true,
+            syncRole: p?.settings?.syncRole ?? "join",
+            syncHostIp: p?.settings?.syncHostIp ?? "",
+            syncAuthToken: p?.settings?.syncAuthToken ?? "",
+            syncAutoConnect: p?.settings?.syncAutoConnect ?? true,
+            lastKnownHostIp: p?.settings?.lastKnownHostIp ?? "",
+            startAtLogin: p?.settings?.startAtLogin ?? true,
+            startAtBoot: p?.settings?.startAtBoot ?? true,
+            autoUpdate: p?.settings?.autoUpdate ?? true,
+          },
+          syncRevision: p?.syncRevision ?? 0,
+          deviceId: p?.deviceId ?? "",
+        };
+      },
       partialize: (s) => ({
         accounts: s.accounts,
         expenses: s.expenses,
@@ -548,6 +667,8 @@ export const useFinanceStore = create<FinanceState>()(
         settings: s.settings,
         chatMessages: s.chatMessages,
         achievements: s.achievements,
+        syncRevision: s.syncRevision,
+        deviceId: s.deviceId,
       }),
     }
   )
