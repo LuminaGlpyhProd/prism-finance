@@ -4,7 +4,7 @@ You can use Prism Finance as a **real app** on your phone and PC — not a dev s
 
 ## Option A — Download ready-made files (recommended)
 
-1. Put this project on **GitHub** (create a repo and push the folder).
+1. Put this project on **GitHub** — you **must upload the `.github` folder** (see [GITHUB-ACTIONS.md](./GITHUB-ACTIONS.md) if Actions is empty).
 2. Open the repo on GitHub → **Actions** → **Build installable apps** → **Run workflow**.
 3. When it finishes (~5–10 min), open the run → **Artifacts**:
    - **Prism-Finance-Windows** → `.exe` (double-click to run)
