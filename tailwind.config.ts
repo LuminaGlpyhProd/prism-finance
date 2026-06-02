@@ -22,8 +22,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "monospace"],
+        sans: ["system-ui", "Segoe UI", "Roboto", "sans-serif"],
+        mono: ["ui-monospace", "Consolas", "monospace"],
       },
       boxShadow: {
         glass: "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)",
