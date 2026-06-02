@@ -6,6 +6,7 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { useFinanceStore } from "@/store/finance-store";
 import { exportExpensesCSV, downloadFile } from "@/lib/export";
+import { SyncSettings } from "./SyncSettings";
 
 export function SettingsView() {
   const settings = useFinanceStore((s) => s.settings);
@@ -77,12 +78,13 @@ export function SettingsView() {
       <GlassCard>
         <h3 className="text-sm text-white/60 mb-4 flex items-center gap-2">
           <Bell size={16} />
-          Data & sync
+          Wi‑Fi sync (real time)
         </h3>
-        <p className="text-xs text-white/50 mb-3">
-          Data is stored locally in your browser (offline-first). Cloud sync &
-          authentication can be added via Supabase.
-        </p>
+        <SyncSettings />
+      </GlassCard>
+
+      <GlassCard>
+        <h3 className="text-sm text-white/60 mb-4">Data & export</h3>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={loadDemoData}>
             Load demo data
