@@ -82,11 +82,26 @@ export interface Achievement {
   icon: string;
 }
 
+export type SyncRole = "host" | "join";
+
 export interface AppSettings {
   theme: ThemeMode;
   currency: string;
   pin?: string;
   notifications: boolean;
+  /** Same Wi‑Fi LAN sync (password required) */
+  syncEnabled: boolean;
+  syncRole: SyncRole;
+  /** PC IP shown in host settings, e.g. 192.168.1.5 */
+  syncHostIp: string;
+  /** SHA-256 hex of sync password — devices must match */
+  syncAuthToken: string;
+  /** Auto-connect/sync when app opens (same Wi‑Fi) */
+  syncAutoConnect: boolean;
+  lastKnownHostIp: string;
+  startAtLogin: boolean;
+  startAtBoot: boolean;
+  autoUpdate: boolean;
 }
 
 export type ViewId =
