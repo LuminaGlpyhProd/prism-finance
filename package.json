@@ -1,6 +1,6 @@
 {
   "name": "prism-finance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI-powered personal finance with liquid glass UI",
   "author": "Prism Finance",
   "private": true,
@@ -12,8 +12,9 @@
     "build": "npm run build:web",
     "build:web": "next build",
     "build:web:packaged": "next build && node scripts/patch-static-paths.mjs",
-    "build:desktop": "npm run build:web:packaged && electron-builder --win",
-    "build:android": "npm run build:web && npx cap sync android",
+    "build:desktop": "npm run build:web:packaged && electron-builder --win --publish never",
+    "build:desktop:publish": "npm run build:web:packaged && electron-builder --win --publish always",
+    "build:android": "npm run build:web:packaged && npx cap sync android && node scripts/patch-android.mjs",
     "cap:open:android": "npx cap open android",
     "lint": "next lint"
   },
@@ -21,13 +22,17 @@
     "@capacitor/android": "^6.2.0",
     "@capacitor/app": "^6.0.1",
     "@capacitor/core": "^6.2.0",
+    "@capacitor/network": "^6.0.2",
+    "@capacitor/preferences": "^6.0.2",
     "@capacitor/status-bar": "^6.0.2",
+    "electron-updater": "^6.3.9",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.469.0",
     "next": "^15.1.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0",
+    "ws": "^8.18.0",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
@@ -57,18 +62,34 @@
     "files": [
       "out/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/ws/**/*",
+      "node_modules/electron-updater/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/ws/**/*"
     ],
     "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "LuminaGlpyhProd",
+        "repo": "prism-finance"
+      }
+    ],
     "win": {
       "target": [
-        { "target": "portable", "arch": ["x64"] }
+        { "target": "nsis", "arch": ["x64"] }
       ],
       "icon": "build/icon.png",
       "signAndEditExecutable": false
     },
-    "portable": {
-      "artifactName": "Prism-Finance-${version}.exe"
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "allowToChangeInstallationDirectory": false,
+      "artifactName": "Prism-Finance-Setup-${version}.exe"
     }
   }
 }
