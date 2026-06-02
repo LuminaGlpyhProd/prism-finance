@@ -61,6 +61,7 @@ jobs:
 
       - run: npx cap add android
       - run: npx cap sync android
+      - run: node scripts/patch-android.mjs
 
       - working-directory: android
         run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
@@ -100,17 +101,21 @@ jobs:
       - name: Create GitHub Release with installers
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Prism Finance — Build ${{ github.run_number }}
+          tag_name: v0.2.0-build-${{ github.run_number }}
+          name: Prism Finance v0.2.0 (build ${{ github.run_number }})
           body: |
-            ## Install Prism Finance
+            ## Prism Finance v0.2.0
 
-            | Platform | File | Instructions |
-            |----------|------|----------------|
-            | **Windows** | `Prism-Finance-Windows.exe` | Download and double-click |
-            | **Android** | `Prism-Finance-Android.apk` | Copy to phone, allow unknown sources, install |
+            - **Wi‑Fi real-time sync** (same network, password protected)
+            - **Auto-connect** when you open phone or PC (Phone Link style)
+            - **Auto-updates** from this Releases page
+            - **Start with Windows** (desktop installer)
+            - **Start after phone reboot** (enable in Settings; some phones need Autostart permission)
 
-            Data stays on your device. No PowerShell or npm needed after download.
+            | Platform | File |
+            |----------|------|
+            | Windows | `Prism-Finance-Windows.exe` — run installer; app checks for updates on launch |
+            | Android | `Prism-Finance-Android.apk` — install; open app once to enable update banner |
           files: |
             release-assets/Prism-Finance-Windows.exe
             release-assets/Prism-Finance-Android.apk
