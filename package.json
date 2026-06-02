@@ -10,8 +10,9 @@
     "dev:desktop": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "icons": "node scripts/generate-icons.mjs",
     "build": "npm run build:web",
-    "build:web": "cross-env BUILD_STATIC=1 next build",
-    "build:desktop": "npm run build:web && electron-builder --win",
+    "build:web": "next build",
+    "build:web:packaged": "next build && node scripts/patch-static-paths.mjs",
+    "build:desktop": "npm run build:web:packaged && electron-builder --win",
     "build:android": "npm run build:web && npx cap sync android",
     "cap:open:android": "npx cap open android",
     "lint": "next lint"
