@@ -265,13 +265,13 @@ export const useFinanceStore = create<FinanceState>()(
 
         const id = `exp-${Date.now()}`;
         const newExpenses = [{ ...expense, id }, ...state.expenses];
-        let accounts = state.accounts.map((a) =>
+        const accounts = state.accounts.map((a) =>
           a.id === expense.accountId
             ? { ...a, balance: Math.max(0, a.balance - expense.amount) }
             : a
         );
 
-        let budget = syncBudgetSpent(newExpenses, state.budget);
+        const budget = syncBudgetSpent(newExpenses, state.budget);
 
         set({
           expenses: newExpenses,
