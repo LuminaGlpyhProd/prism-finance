@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --prism-bg: #05060a;
+  --prism-bg-light: #f0f4ff;
+  --prism-glow: #6ee7ff;
+  --prism-accent: #a78bfa;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* Liquid glass surfaces */
+.glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.glass-light {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.85) 0%,
+    rgba(255, 255, 255, 0.65) 100%
+  );
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+.glass-strong {
+  background: linear-gradient(
+    160deg,
+    rgba(110, 231, 255, 0.12) 0%,
+    rgba(167, 139, 250, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(110, 231, 255, 0.2);
+}
+
+.glow-ring {
+  position: relative;
+}
+
+.glow-ring::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(110, 231, 255, 0.5),
+    rgba(167, 139, 250, 0.3),
+    transparent
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.mesh-bg {
+  background-color: var(--prism-bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(110, 231, 255, 0.15), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(167, 139, 250, 0.12), transparent),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(52, 211, 153, 0.08), transparent);
+}
+
+.mesh-bg-light {
+  background-color: var(--prism-bg-light);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(110, 231, 255, 0.25), transparent),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(167, 139, 250, 0.15), transparent);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+input,
+select,
+textarea {
+  @apply outline-none;
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-violet-300 to-emerald-300;
+  }
+}
