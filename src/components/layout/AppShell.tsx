@@ -13,6 +13,7 @@ import { SavingsView } from "@/components/views/SavingsView";
 import { AssistantView } from "@/components/views/AssistantView";
 import { SettingsView } from "@/components/views/SettingsView";
 import { cn } from "@/lib/utils";
+import { SyncBootstrap } from "@/components/sync/SyncBootstrap";
 
 const VIEWS = {
   dashboard: DashboardView,
@@ -46,8 +47,9 @@ export function AppShell() {
         <div className="absolute top-1/3 -right-20 w-96 h-96 rounded-full bg-violet-500/10 blur-3xl animate-float" style={{ animationDelay: "2s" }} />
       </div>
 
+      <SyncBootstrap />
       <Sidebar />
-      <main className="flex-1 min-w-0 p-4 pt-[max(1rem,env(safe-area-inset-top))] lg:p-8 pb-[max(6rem,env(safe-area-inset-bottom))] lg:pb-8 relative z-10 max-w-6xl mx-auto w-full">
+      <main className="flex-1 min-w-0 p-4 pt-[max(2.5rem,env(safe-area-inset-top))] lg:p-8 pb-[max(6rem,env(safe-area-inset-bottom))] lg:pb-8 relative z-10 max-w-6xl mx-auto w-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeView}
