@@ -1,0 +1,123 @@
+# Builds Windows .exe + Android .apk and attaches them to GitHub Releases
+name: Build installable apps
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-exe:
+    name: Windows .exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm install
+      - run: npm run icons
+      - run: npm run build:desktop
+        env:
+          BUILD_STATIC: "1"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Prism-Finance-Windows-exe
+          path: dist-desktop/*.exe
+          if-no-files-found: error
+
+  android-apk:
+    name: Android .apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - run: npm install
+      - run: npm run icons
+      - run: npm run build:web
+        env:
+          BUILD_STATIC: "1"
+
+      - run: npx cap add android
+      - run: npx cap sync android
+
+      - working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Prism-Finance-Android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+  release:
+    name: Publish download links
+    needs: [windows-exe, android-apk]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: Prism-Finance-Windows-exe
+          path: release-assets/windows
+
+      - name: Download Android build
+        uses: actions/download-artifact@v4
+        with:
+          name: Prism-Finance-Android-apk
+          path: release-assets/android
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release-assets
+          WIN_EXE=$(find release-assets/windows -name "*.exe" | head -1)
+          cp "$WIN_EXE" release-assets/Prism-Finance-Windows.exe
+          cp release-assets/android/app-debug.apk release-assets/Prism-Finance-Android.apk
+          ls -la release-assets/
+
+      - name: Create GitHub Release with installers
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Prism Finance — Build ${{ github.run_number }}
+          body: |
+            ## Install Prism Finance
+
+            | Platform | File | Instructions |
+            |----------|------|----------------|
+            | **Windows** | `Prism-Finance-Windows.exe` | Download and double-click |
+            | **Android** | `Prism-Finance-Android.apk` | Copy to phone, allow unknown sources, install |
+
+            Data stays on your device. No PowerShell or npm needed after download.
+          files: |
+            release-assets/Prism-Finance-Windows.exe
+            release-assets/Prism-Finance-Android.apk
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
